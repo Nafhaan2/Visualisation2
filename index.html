@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Australian Fire Data Visualization</title>
+    
+    <!-- Vega Embed Library -->
+    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+    
+    <!-- Custom CSS for aesthetic -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        header {
+            background-color: #006DAE; /* Monash University Blue */
+            color: white;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        main {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        #vis-container {
+            width: 60%;
+            max-width: 100%;
+            margin-right: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        #description {
+            width: 35%;
+            max-width: 100%;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        #legend-bar-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        #legend-bar {
+            width: 60%;
+            height: 20px;
+            background: linear-gradient(to right, #fb6a4a, #ef3b2c, #d7301f, #b30000, #7f0000);
+            border-radius: 5px;
+            margin-right: 10px;
+            position: relative;
+        }
+
+        .legend-labels {
+            display: flex;
+            justify-content: space-between;
+            position: absolute;
+            width: 60%;
+            top: 30px;  /* Position the labels directly under the gradient bar */
+            font-size: 12px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 10px;
+            background-color: #006DAE;
+            color: white;
+            margin-top: 20px;
+        }
+
+        h1, h2, p {
+            margin-bottom: 20px;
+        }
+
+        #vis {
+            width: 100%;
+            height: auto;
+        }
+
+        @media screen and (max-width: 768px) {
+            main {
+                flex-direction: column;
+            }
+            #vis-container, #description {
+                width: 100%;
+            }
+            #legend-bar {
+                width: 100%;
+            }
+            .legend-labels {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Australian Fire Data Visualization</h1>
+    </header>
+
+    <main>
+        <div id="vis-container">
+            <!-- Legend for the map -->
+            <div id="legend-bar-container">
+                <div id="legend-bar"></div>
+                <div class="legend-labels">
+                    <span style="position: absolute; left: 0;">Low</span>
+                    <span style="position: absolute; left: 25%;">Moderate</span>
+                    <span style="position: absolute; left: 50%;">High</span>
+                    <span style="position: absolute; left: 75%;">Very High</span>
+                    <span style="position: absolute; right: 0;">Extreme</span>
+                </div>
+            </div>
+            <!-- Visualization will be embedded here -->
+            <div id="vis"></div>
+        </div>
+
+        <div id="description">
+            <h2>Description</h2>
+            <p>This visualization shows the locations and intensity of fires in Australia, based on satellite data collected from August 2019 to December 2019.</p>
+            <p>The fire data is visualized on a map of Australia, where each point represents a fire incident. The size of each point indicates the Fire Radiative Power (FRP), which is a measure of the fire's intensity. The color of each point, ranging from light red to dark red, represents the brightness of the fire, with darker shades indicating higher brightness.</p>
+            <p>A slider allows you to filter the data by date, visualizing fire activity over time. You can pan and zoom the map to explore different regions of Australia.</p>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Australian Fire Data Visualization | Data sourced from NASA’s MODIS</p>
+    </footer>
+
+    <!-- Embed Vega Visualization -->
+    <script type="text/javascript">
+        var spec = {
+            "$schema": "https://vega.github.io/schema/vega/v5.json",
+            "description": "An interactive map with Australian fire data, supporting pan and zoom, with date-based animation and brightness legend.",
+            "width": 800,
+            "height": 500,
+            "padding": 5,
+            "autosize": "none",
+
+            "signals": [
+                { "name": "tx", "update": "width / 2" },
+                { "name": "ty", "update": "height / 2" },
+                {
+                    "name": "scale",
+                    "value": 500,
+                    "on": [{
+                        "events": {"type": "wheel", "consume": true},
+                        "update": "clamp(scale * pow(1.01, -event.deltaY * pow(16, event.deltaMode)), 150, 3000)"
+                    }]
+                },
+                {
+                    "name": "angles",
+                    "value": [0, 0],
+                    "on": [{
+                        "events": "pointerdown",
+                        "update": "[rotateX, centerY]"
+                    }]
+                },
+                {
+                    "name": "cloned",
+                    "value": null,
+                    "on": [{
+                        "events": "pointerdown",
+                        "update": "copy('projection')"
+                    }]
+                },
+                {
+                    "name": "start",
+                    "value": null,
+                    "on": [{
+                        "events": "pointerdown",
+                        "update": "invert(cloned, xy())"
+                    }]
+                },
+                {
+                    "name": "drag", "value": null,
+                    "on": [{
+                        "events": "[pointerdown, window:pointerup] > window:pointermove",
+                        "update": "invert(cloned, xy())"
+                    }]
+                },
+                {
+                    "name": "delta", "value": null,
+                    "on": [{
+                        "events": {"signal": "drag"},
+                        "update": "[drag[0] - start[0], start[1] - drag[1]]"
+                    }]
+                },
+                {
+                    "name": "rotateX", "value": 0,
+                    "on": [{
+                        "events": {"signal": "delta"},
+                        "update": "angles[0] + delta[0]"
+                    }]
+                },
+                {
+                    "name": "centerY", "value": 0,
+                    "on": [{
+                        "events": {"signal": "delta"},
+                        "update": "clamp(angles[1] + delta[1], -60, 60)"
+                    }]
+                },
+                {
+                    "name": "currentDate",
+                    "value": 1564617600000,
+                    "bind": {
+                        "input": "range",
+                        "min": 1564617600000,
+                        "max": 1577750400000,
+                        "step": 86400000,
+                        "name": "Date: "
+                    }
+                }
+            ],
+
+            "projections": [
+                {
+                    "name": "projection",
+                    "type": "mercator",
+                    "scale": {"signal": "scale"},
+                    "rotate": [{"signal": "rotateX"}, {"signal": "centerY"}, 0],
+                    "center": [133, -28],
+                    "translate": [{"signal": "tx"}, {"signal": "ty"}]
+                }
+            ],
+
+            "data": [
+                {
+                    "name": "world",
+                    "url": "https://raw.githubusercontent.com/johan/world.geo.json/refs/heads/master/countries/AUS.geo.json",
+                    "format": {
+                        "type": "json",
+                        "property": "features"
+                    }
+                },
+                {
+                    "name": "graticule",
+                    "transform": [
+                        { "type": "graticule", "step": [15, 15] }
+                    ]
+                },
+                {
+                    "name": "fires",
+                    "url": "https://raw.githubusercontent.com/Nafhaan2/Visualisation2/main/fire_archive_M6_96619.csv",
+                    "format": {"type": "csv"},
+                    "transform": [
+                        {
+                            "type": "filter",
+                            "expr": "time(datum.acq_date) >= currentDate"
+                        }
+                    ]
+                }
+            ],
+
+            "scales": [
+                {
+                    "name": "colorScale",
+                    "type": "linear",
+                    "domain": {"data": "fires", "field": "brightness"},
+                    "range": ["#fb6a4a", "#ef3b2c", "#d7301f", "#b30000", "#7f0000"]
+                },
+                {
+                    "name": "sizeScale",
+                    "type": "linear",
+                    "domain": {"data": "fires", "field": "frp"},
+                    "range": [10, 100]
+                },
+                {
+                    "name": "legendScale",
+                    "type": "linear",
+                    "domain": {"data": "fires", "field": "brightness"},
+                    "range": [0, 200],
+                    "zero": false,
+                    "nice": true
+                }
+            ],
+
+            "marks": [
+                {
+                    "type": "shape",
+                    "from": {"data": "graticule"},
+                    "encode": {
+                        "enter": {
+                            "strokeWidth": {"value": 1},
+                            "stroke": {"value": "#ddd"},
+                            "fill": {"value": null}
+                        }
+                    },
+                    "transform": [
+                        { "type": "geoshape", "projection": "projection" }
+                    ]
+                },
+                {
+                    "type": "shape",
+                    "from": {"data": "world"},
+                    "encode": {
+                        "enter": {
+                            "strokeWidth": {"value": 0.5},
+                            "stroke": {"value": "#ccc"},
+                            "fill": {"value": "#f4f1d0"}
+                        }
+                    },
+                    "transform": [
+                        { "type": "geoshape", "projection": "projection" }
+                    ]
+                },
+                {
+                    "type": "symbol",
+                    "from": {"data": "fires"},
+                    "encode": {
+                        "enter": {
+                            "longitude": {"field": "longitude"},
+                            "latitude": {"field": "latitude"},
+                            "size": {"scale": "sizeScale", "field": "frp"},
+                            "fill": {"scale": "colorScale", "field": "brightness"},
+                            "tooltip": {
+                                "signal": "{'Date': datum.acq_date, 'Time': datum.acq_time, 'Brightness': datum.brightness, 'FRP': datum.frp, 'Confidence': datum.confidence}"
+                            },
+                            "fillOpacity": {"value": 0.6}
+                        },
+                        "update": {
+                            "fillOpacity": {"value": 0.6}
+                        },
+                        "hover": {
+                            "fillOpacity": {"value": 1.0}
+                        }
+                    },
+                    "transform": [
+                        {
+                            "type": "geopoint",
+                            "projection": "projection",
+                            "fields": ["longitude", "latitude"]
+                        }
+                    ]
+                }
+            ],
+            "config": {
+                "axis": {
+                    "labelFontSize": 10,
+                    "titleFontSize": 12
+                }
+            }
+        };
+
+        // Embed the visualization into the "vis" div
+        vegaEmbed('#vis', spec).then(result => {
+            console.log("Visualization rendered");
+        }).catch(console.warn);
+    </script>
+
+</body>
+</html>
