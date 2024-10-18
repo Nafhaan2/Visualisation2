@@ -207,7 +207,7 @@
 
         <!-- Contour Plot Container -->
         <div class="vis-container">
-            <h2 style="font-size: 20px; text-align: center;">Fire density Contour Plot</h2>
+            <h2 style="font-size: 20px; text-align: center;">Fire Density Contour Plot</h2>
             <div id="contour-plot" style="width: 100%;"></div>
         </div>
         <!-- Description for the contour plot -->
@@ -256,7 +256,7 @@
         var mapSpec = {
             "$schema": "https://vega.github.io/schema/vega/v5.json",
             "description": "An interactive map with Australian fire data, supporting pan and zoom, with date-based animation and brightness legend.",
-            "width": 580,
+            "width": 680,
             "height": 400,
             "padding": 5,
             "autosize": "none",
@@ -471,7 +471,7 @@
             }
         };
 
-        // Embed the new visualization
+        // Embed the stacked area chart visualization
         vegaEmbed('#new-visualization', newVisualizationSpec).then(result => {
             console.log("New visualization rendered");
         }).catch(console.warn);
