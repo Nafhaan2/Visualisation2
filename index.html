@@ -5,114 +5,154 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Australian Fire Data Visualization</title>
     
-    <!-- Vega Embed Library -->
+    <!-- Vega Embed Library , These scripts are essential for rendering the visualizations -->
     <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>     
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>    
     
     <!-- Custom CSS for aesthetic -->
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f0f0f0;
+            background-color: #fff5f0;
             color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;      
         }
 
         header {
-            background-color: #006DAE; /* Monash University Blue */
+            background-color: #7f0000;
             color: white;
             text-align: center;
             padding: 1rem;
+            width: 100%;
         }
 
         main {
             display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
+            flex-direction: column;
+            align-items: center;
             padding: 20px;
+            max-width: 1200px;
+            width: 100%;
         }
 
-        #vis-container {
-            width: 60%;
-            max-width: 100%;
-            margin-right: 20px;
+        .vis-container {
+            width: 100%;
+            max-width: 800px;
             margin-bottom: 20px;
-            border: 1px solid #ddd;
             background-color: white;
-            padding: 15px;
-            border-radius: 8px;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(127, 0, 0, 0.1);
             position: relative;
+            transition: transform 0.2s;
         }
 
-        #description {
-            width: 35%;
-            max-width: 100%;
+        .vis-container:hover {
+            transform: scale(1.02);
+        }
+
+        .description {
+            width: 100%;
+            max-width: 800px;
+            background-color: #fee0d2;
             padding: 20px;
-            background-color: white;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(127, 0, 0, 0.1);
+            margin-bottom: 110px;
+            line-height: 1.6;
+            transition: transform 0.2s;
+        }
+
+        .description:hover {
+            transform: scale(1.02);
         }
 
         #legend-bar-container {
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            margin-bottom: 10px;
-            position: relative;
+            position: absolute;
+            right: 20px;
+            height: 100%;
         }
 
         #legend-bar {
-            width: 60%;
-            height: 20px;
-            background: linear-gradient(to right, #fb6a4a, #ef3b2c, #d7301f, #b30000, #7f0000);
+            width: 20px;
+            height: 60%;
+            background: linear-gradient(to top, #ffffb2, #fecc5c, #fd8d3c, #f03b20, #bd0026);
             border-radius: 5px;
-            margin-right: 10px;
             position: relative;
         }
 
         .legend-labels {
             display: flex;
+            flex-direction: column;
             justify-content: space-between;
             position: absolute;
-            width: 60%;
-            top: 30px;  /* Position the labels directly under the gradient bar */
+            height: 60%;
+            right: 25px;
             font-size: 12px;
+        }
+
+        #frp-legend {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+
+        #frp-legend-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .frp-legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .frp-legend-circle {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
         }
 
         footer {
             text-align: center;
             padding: 10px;
-            background-color: #006DAE;
+            background-color: #7f0000;
             color: white;
             margin-top: 20px;
+            width: 100%;
         }
 
         h1, h2, p {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
-        #vis {
+        #vis, #bar-chart, #new-visualization, #contour-plot {
             width: 100%;
             height: auto;
         }
 
         @media screen and (max-width: 768px) {
-            main {
-                flex-direction: column;
-            }
-            #vis-container, #description {
-                width: 100%;
-            }
-            #legend-bar {
-                width: 100%;
-            }
-            .legend-labels {
-                width: 100%;
+            .vis-container, .description {
+                width: 95%;
             }
         }
+
+        
     </style>
 </head>
 <body>
@@ -122,120 +162,135 @@
     </header>
 
     <main>
-        <div id="vis-container">
+        <div class="vis-container">
+            <h2 style="font-size: 20px; text-align: center;">Map of Australian Fire Locations and Intensity</h2>
             <!-- Legend for the map -->
             <div id="legend-bar-container">
                 <div id="legend-bar"></div>
                 <div class="legend-labels">
-                    <span style="position: absolute; left: 0;">Low</span>
-                    <span style="position: absolute; left: 25%;">Moderate</span>
-                    <span style="position: absolute; left: 50%;">High</span>
-                    <span style="position: absolute; left: 75%;">Very High</span>
-                    <span style="position: absolute; right: 0;">Extreme</span>
+                    <span style="position: absolute; bottom: 0; right: 25px;">Low</span>
+                    <span style="position: absolute; bottom: 25%; right: 25px;">Moderate</span>
+                    <span style="position: absolute; bottom: 50%; right: 25px;">High</span>
+                    <span style="position: absolute; bottom: 75%; right: 25px;">Very High</span>
+                    <span style="position: absolute; top: 0; right: 25px;">Extreme</span>
                 </div>
             </div>
-            <!-- Visualization will be embedded here -->
+            <!-- FRP Legend -->
+            <div id="frp-legend">
+                <div id="frp-legend-title">Fire Radiative Power (FRP)</div>
+                <div class="frp-legend-item">
+                    <div class="frp-legend-circle" style="width: 5px; height: 5px; background-color: #fd8d3c;"></div>
+                    <span>Low</span>
+                </div>
+                <div class="frp-legend-item">
+                    <div class="frp-legend-circle" style="width: 10px; height: 10px; background-color: #fd8d3c;"></div>
+                    <span>Medium</span>
+                </div>
+                <div class="frp-legend-item">
+                    <div class="frp-legend-circle" style="width: 15px; height: 15px; background-color: #fd8d3c;"></div>
+                    <span>High</span>
+                </div>
+            </div>
+            <!-- Map Visualization -->
             <div id="vis"></div>
         </div>
-
-        <div id="description">
+        <!-- Description for the map -->
+        <div class="description">
             <h2>Description</h2>
             <p>This visualization shows the locations and intensity of fires in Australia, based on satellite data collected from August 2019 to December 2019.</p>
-            <p>The fire data is visualized on a map of Australia, where each point represents a fire incident. The size of each point indicates the Fire Radiative Power (FRP), which is a measure of the fire's intensity. The color of each point, ranging from light red to dark red, represents the brightness of the fire, with darker shades indicating higher brightness.</p>
-            <p>A slider allows you to filter the data by date, visualizing fire activity over time. You can pan and zoom the map to explore different regions of Australia.</p>
+            <p>The fire data is visualized on a map of Australia, where each point represents a fire incident. The size of each point indicates the Fire Radiative Power (FRP), which is a measure of the fire's intensity. The color of each point, ranging from yellow to dark red, represents the brightness of the fire, with darker shades indicating higher brightness.</p>
+            <p>You can use the date selector to view fire data on specific dates between August and September 2019, or check the 'Show All Dates' box to see all data points.</p>
+        </div>
+
+        <!-- Curved separator -->
+        <div class="curved-separator"></div>
+
+        <!-- Contour Plot Container -->
+        <div class="vis-container">
+            <h2 style="font-size: 20px; text-align: center;">Fire Intensity Contour Plot</h2>
+            <div id="contour-plot" style="width: 100%;"></div>
+        </div>
+        <!-- Description for the contour plot -->
+        <div class="description">
+            <h2>Description</h2>
+            <p>This contour plot visualization shows the spread of fire incidents across geographic locations in Australia using latitude and longitude</p>
+            <p>Each small gray dot represents an individual fire incident. These dots are placed according to the fire's location (latitude and longitude). They show where each fire was detected, helping to visualize individual fire events.</p>
+            <p>The colored contour lines represent the spread of fire intensity across the plotted geographic area. Contours are drawn based on the density of fire incidents in a region.</p>
+            <p>You can adjust the bandwidth to control how smooth the contours appear. Lower bandwidth will result in more detailed (but potentially noisy) contours, while higher bandwidth will give a smoother, more general view of fire spread.</p>
+        </div>
+
+        <!-- Curved separator -->
+        <div class="curved-separator"></div>
+
+        <!-- New Visualization Container -->
+        <div class="vis-container">
+            <h2 style="font-size: 20px; text-align: center;">Average Fire Radiative Power by Region Over Time</h2>
+            <div id="new-visualization" style="width: 100%;"></div>
+        </div>
+        <!-- Description for the new visualization -->
+        <div class="description">
+            <h2>Description</h2>
+            <p>This stacked area chart displays the average Fire Radiative Power (FRP) by region over time. It allows for comparison of fire intensity across different regions of Australia throughout the fire season. The chart uses a color scheme to distinguish between regions, with the y-axis representing the average FRP and the x-axis showing the date.</p>
+        </div>
+
+        <!-- Curved separator -->
+        <div class="curved-separator"></div>
+
+        <div class="vis-container">
+            <h2 style="font-size: 20px; text-align: center;">Bar Chart of Total Fire Radiative Power by Date</h2>
+            <div id="bar-chart" style="width: 100%;"></div>
+        </div>
+        <!-- Description for the bar chart -->
+        <div class="description">
+            <h2>Description</h2>
+            <p>This bar chart shows the total Fire Radiative Power (FRP) for each day, separated by day and night, during the fire season in 2019. The FRP is an indicator of fire intensity, and you can compare daily fire activity across different time periods.</p>
         </div>
     </main>
 
     <footer>
-        <p>&copy; 2024 Australian Fire Data Visualization | Data sourced from NASA’s MODIS</p>
+        <p>&copy; 2024 Australian Fire Data Visualization | Data sourced from NASA's MODIS</p>
     </footer>
 
-    <!-- Embed Vega Visualization -->
+    <!-- Embed Vega Map Visualization -->
     <script type="text/javascript">
-        var spec = {
+        var mapSpec = {
             "$schema": "https://vega.github.io/schema/vega/v5.json",
             "description": "An interactive map with Australian fire data, supporting pan and zoom, with date-based animation and brightness legend.",
-            "width": 800,
-            "height": 500,
+            "width": 580,
+            "height": 400,
             "padding": 5,
             "autosize": "none",
-
             "signals": [
-                { "name": "tx", "update": "width / 2" },
-                { "name": "ty", "update": "height / 2" },
+                {"name": "tx", "update": "width / 2"},
+                {"name": "ty", "update": "height / 2"},
                 {
                     "name": "scale",
                     "value": 500,
-                    "on": [{
-                        "events": {"type": "wheel", "consume": true},
-                        "update": "clamp(scale * pow(1.01, -event.deltaY * pow(16, event.deltaMode)), 150, 3000)"
-                    }]
+                    "on": [
+                        {
+                            "events": {"type": "wheel", "consume": true},
+                            "update": "clamp(scale * pow(1.01, -event.deltaY * pow(16, event.deltaMode)), 150, 3000)"
+                        }
+                    ]
                 },
+                {"name": "angles", "value": [0, 0], "on": [{"events": "pointerdown", "update": "[rotateX, centerY]"}]},
+                {"name": "cloned", "value": null, "on": [{"events": "pointerdown", "update": "copy('projection')"}]},
+                {"name": "start", "value": null, "on": [{"events": "pointerdown", "update": "invert(cloned, xy())"}]},
+                {"name": "drag", "value": null, "on": [{"events": "[pointerdown, window:pointerup] > window:pointermove", "update": "invert(cloned, xy())"}]},
+                {"name": "delta", "value": null, "on": [{"events": {"signal": "drag"}, "update": "[drag[0] - start[0], start[1] - drag[1]]"}]},
+                {"name": "rotateX", "value": 0, "on": [{"events": {"signal": "delta"}, "update": "clamp(angles[0] + delta[0], -30, 30)"}]},
+                {"name": "centerY", "value": 0, "on": [{"events": {"signal": "delta"}, "update": "clamp(angles[1] + delta[1], -30, 30)"}]},
                 {
-                    "name": "angles",
-                    "value": [0, 0],
-                    "on": [{
-                        "events": "pointerdown",
-                        "update": "[rotateX, centerY]"
-                    }]
-                },
-                {
-                    "name": "cloned",
-                    "value": null,
-                    "on": [{
-                        "events": "pointerdown",
-                        "update": "copy('projection')"
-                    }]
-                },
-                {
-                    "name": "start",
-                    "value": null,
-                    "on": [{
-                        "events": "pointerdown",
-                        "update": "invert(cloned, xy())"
-                    }]
-                },
-                {
-                    "name": "drag", "value": null,
-                    "on": [{
-                        "events": "[pointerdown, window:pointerup] > window:pointermove",
-                        "update": "invert(cloned, xy())"
-                    }]
-                },
-                {
-                    "name": "delta", "value": null,
-                    "on": [{
-                        "events": {"signal": "drag"},
-                        "update": "[drag[0] - start[0], start[1] - drag[1]]"
-                    }]
-                },
-                {
-                    "name": "rotateX", "value": 0,
-                    "on": [{
-                        "events": {"signal": "delta"},
-                        "update": "angles[0] + delta[0]"
-                    }]
-                },
-                {
-                    "name": "centerY", "value": 0,
-                    "on": [{
-                        "events": {"signal": "delta"},
-                        "update": "clamp(angles[1] + delta[1], -60, 60)"
-                    }]
+                    "name": "showAllDates",
+                    "value": false,
+                    "bind": {"input": "checkbox", "name": "Show All Dates: "}
                 },
                 {
                     "name": "currentDate",
-                    "value": 1564617600000,
-                    "bind": {
-                        "input": "range",
-                        "min": 1564617600000,
-                        "max": 1577750400000,
-                        "step": 86400000,
-                        "name": "Date: "
-                    }
+                    "value": "2019-08-01",
+                    "bind": {"input": "date", "min": "2019-08-01", "max": "2019-09-30", "name": "Select Date: "}
                 }
             ],
-
             "projections": [
                 {
                     "name": "projection",
@@ -246,87 +301,32 @@
                     "translate": [{"signal": "tx"}, {"signal": "ty"}]
                 }
             ],
-
             "data": [
                 {
                     "name": "world",
                     "url": "https://raw.githubusercontent.com/johan/world.geo.json/refs/heads/master/countries/AUS.geo.json",
-                    "format": {
-                        "type": "json",
-                        "property": "features"
-                    }
-                },
-                {
-                    "name": "graticule",
-                    "transform": [
-                        { "type": "graticule", "step": [15, 15] }
-                    ]
+                    "format": {"type": "json", "property": "features"}
                 },
                 {
                     "name": "fires",
                     "url": "https://raw.githubusercontent.com/Nafhaan2/Visualisation2/main/fire_archive_M6_96619.csv",
-                    "format": {"type": "csv"},
+                    "format": {"type": "csv", "delimiter": ","},
                     "transform": [
-                        {
-                            "type": "filter",
-                            "expr": "time(datum.acq_date) >= currentDate"
-                        }
+                        {"type": "filter", "expr": "!showAllDates ? timeFormat(datetime(datum.acq_date), '%Y-%m-%d') == currentDate : true"}
                     ]
                 }
             ],
-
             "scales": [
                 {
                     "name": "colorScale",
                     "type": "linear",
                     "domain": {"data": "fires", "field": "brightness"},
-                    "range": ["#fb6a4a", "#ef3b2c", "#d7301f", "#b30000", "#7f0000"]
+                    "range": ["#ffffb2", "#fecc5c", "#fd8d3c", "#f03b20", "#bd0026"]
                 },
-                {
-                    "name": "sizeScale",
-                    "type": "linear",
-                    "domain": {"data": "fires", "field": "frp"},
-                    "range": [10, 100]
-                },
-                {
-                    "name": "legendScale",
-                    "type": "linear",
-                    "domain": {"data": "fires", "field": "brightness"},
-                    "range": [0, 200],
-                    "zero": false,
-                    "nice": true
-                }
+                {"name": "sizeScale", "type": "linear", "domain": {"data": "fires", "field": "frp"}, "range": [10, 100]}
             ],
-
             "marks": [
-                {
-                    "type": "shape",
-                    "from": {"data": "graticule"},
-                    "encode": {
-                        "enter": {
-                            "strokeWidth": {"value": 1},
-                            "stroke": {"value": "#ddd"},
-                            "fill": {"value": null}
-                        }
-                    },
-                    "transform": [
-                        { "type": "geoshape", "projection": "projection" }
-                    ]
-                },
-                {
-                    "type": "shape",
-                    "from": {"data": "world"},
-                    "encode": {
-                        "enter": {
-                            "strokeWidth": {"value": 0.5},
-                            "stroke": {"value": "#ccc"},
-                            "fill": {"value": "#f4f1d0"}
-                        }
-                    },
-                    "transform": [
-                        { "type": "geoshape", "projection": "projection" }
-                    ]
-                },
+                {"type": "shape", "from": {"data": "world"}, "encode": {"enter": {"strokeWidth": {"value": 0.5}, "stroke": {"value": "#ccc"}, "fill": {"value": "#fff5f0"}}}, "transform": [{"type": "geoshape", "projection": "projection"}]},
                 {
                     "type": "symbol",
                     "from": {"data": "fires"},
@@ -341,33 +341,272 @@
                             },
                             "fillOpacity": {"value": 0.6}
                         },
-                        "update": {
-                            "fillOpacity": {"value": 0.6}
-                        },
-                        "hover": {
-                            "fillOpacity": {"value": 1.0}
-                        }
+                        "update": {"fillOpacity": {"value": 0.6}},
+                        "hover": {"fillOpacity": {"value": 1}}
                     },
+                    "transform": [{"type": "geopoint", "projection": "projection", "fields": ["longitude", "latitude"]}]
+                }
+            ]
+        };
+
+        // Embed the map visualization
+        vegaEmbed('#vis', mapSpec).then(result => {
+            console.log("Map visualization rendered");
+        }).catch(console.warn);
+
+        // Embed the bar chart visualization
+        var barChartSpec = {
+          "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+          "description": "Total FRP by Date with Day/Night Filter",
+          "width": 600,
+          "height": 400,
+          "data": {
+            "url": "https://raw.githubusercontent.com/Nafhaan2/week10-homowork-3179/refs/heads/main/fire_archive_M6_96619.csv",
+            "format": {"type": "csv"}
+          },
+          "mark": "bar",
+          "encoding": {
+            "x": {
+              "field": "acq_date",
+              "type": "temporal",
+              "title": "Acquisition Date",
+              "timeUnit": "yearmonthdate",
+              "axis": {"labelAngle": 45, "format": "%b %d, %Y"}
+            },
+            "y": {
+              "field": "frp",
+              "type": "quantitative",
+              "aggregate": "sum",
+              "title": "Total Fire Radiative Power"
+            },
+            "color": {
+              "field": "daynight",
+              "type": "nominal",
+              "title": "Day/Night",
+              "scale": {
+                "domain": ["D", "N"],
+                "range": ["#d7301f", "#fee0d2"]
+              },
+              "legend": {
+                "title": "Day/Night",
+                "labelExpr": "datum.value === 'D' ? 'Day' : 'Night'"
+              }
+            },
+            "tooltip": [
+              {"field": "acq_date", "type": "temporal", "title": "Date"},
+              {
+                "field": "frp",
+                "type": "quantitative",
+                "aggregate": "sum",
+                "title": "Total FRP"
+              },
+              {"field": "daynight", "type": "nominal", "title": "Day/Night"}
+            ]
+          },
+          "selection": {
+            "daynight_filter": {
+              "type": "single",
+              "fields": ["daynight"],
+              "bind": {
+                "input": "select",
+                "options": [null, "D", "N"],
+                "labels": ["All", "Day", "Night"],
+                "name": "Select Day/Night: "
+              }
+            }
+          },
+          "transform": [{"filter": {"selection": "daynight_filter"}}]
+        };
+        
+        // Embed the bar chart into the #bar-chart div
+        vegaEmbed('#bar-chart', barChartSpec).then(result => {
+            console.log("Bar chart rendered");
+        }).catch(console.warn);
+
+        
+        var newVisualizationSpec = {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "description": "Stacked area chart showing average Fire Radiative Power (FRP) by region over time.",
+            "width": 600,
+            "height": 400,
+            "data": {
+                "url": "https://raw.githubusercontent.com/Nafhaan2/Visualisation2/refs/heads/main/daily_avg_frp.csv",
+                "format": {"type": "csv"}
+            },
+            "transform": [
+                {
+                    "calculate": "toDate(datum.acq_date)",
+                    "as": "parsed_date"
+                }
+            ],
+            "mark": {
+                "type": "area",
+                "interpolate": "monotone"
+            },
+            "encoding": {
+                "x": {
+                    "field": "parsed_date",
+                    "type": "temporal",
+                    "title": "Acquisition Date",
+                    "axis": {"format": "%b %d, %Y"}
+                },
+                "y": {
+                    "field": "avg_frp",
+                    "type": "quantitative",
+                    "title": "Average Fire Radiative Power (FRP)"
+                },
+                "color": {
+                    "field": "region",
+                    "type": "nominal",
+                    "scale": {
+                        "scheme": "reds"
+                    },
+                    "title": "Region"
+                },
+                "tooltip": [
+                    {"field": "parsed_date", "type": "temporal", "title": "Date"},
+                    {"field": "avg_frp", "type": "quantitative", "title": "Average FRP"},
+                    {"field": "region", "type": "nominal", "title": "Region"}
+                ]
+            }
+        };
+
+        // Embed the new visualization
+        vegaEmbed('#new-visualization', newVisualizationSpec).then(result => {
+            console.log("New visualization rendered");
+        }).catch(console.warn);
+
+        // Contour Plot Specification
+        var contourPlotSpec = {
+            "$schema": "https://vega.github.io/schema/vega/v5.json",
+            "description": "Contour plot of fire spread patterns by region using latitude and longitude.",
+            "width": 600,
+            "height": 450,
+            "padding": 5,
+            "autosize": "pad",
+
+            "signals": [
+                {
+                    "name": "bandwidth",
+                    "value": -1,
+                    "bind": {"input": "range", "min": -1, "max": 100, "step": 1}
+                }
+            ],
+
+            "data": [
+                {
+                    "name": "source",
+                    "url": "https://raw.githubusercontent.com/Nafhaan2/Visualisation2/refs/heads/main/fire_archive_M6_96619.csv",
+                    "format": {"type": "csv"},
                     "transform": [
                         {
-                            "type": "geopoint",
-                            "projection": "projection",
-                            "fields": ["longitude", "latitude"]
+                            "type": "filter",
+                            "expr": "datum.latitude != null && datum.longitude != null && datum.frp != null"
+                        }
+                    ]
+                },
+                {
+                    "name": "density",
+                    "source": "source",
+                    "transform": [
+                        {
+                            "type": "kde2d",
+                            "groupby": ["region"],
+                            "size": [{"signal": "width"}, {"signal": "height"}],
+                            "x": {"expr": "scale('x', datum.longitude)"},
+                            "y": {"expr": "scale('y', datum.latitude)"},
+                            "bandwidth": {"signal": "[bandwidth, bandwidth]"}
+                        }
+                    ]
+                },
+                {
+                    "name": "contours",
+                    "source": "density",
+                    "transform": [
+                        {
+                            "type": "isocontour",
+                            "field": "grid",
+                            "levels": 5
                         }
                     ]
                 }
             ],
-            "config": {
-                "axis": {
-                    "labelFontSize": 10,
-                    "titleFontSize": 12
+
+            "scales": [
+                {
+                    "name": "x",
+                    "type": "linear",
+                    "round": true,
+                    "nice": true,
+                    "zero": false,
+                    "domain": {"data": "source", "field": "longitude"},
+                    "range": "width"
+                },
+                {
+                    "name": "y",
+                    "type": "linear",
+                    "round": true,
+                    "nice": true,
+                    "zero": false,
+                    "domain": {"data": "source", "field": "latitude"},
+                    "range": "height"
                 }
-            }
+            ],
+
+            "axes": [
+                {
+                    "scale": "x",
+                    "grid": true,
+                    "domain": false,
+                    "orient": "bottom",
+                    "tickCount": 5,
+                    "title": "Longitude"
+                },
+                {
+                    "scale": "y",
+                    "grid": true,
+                    "domain": false,
+                    "orient": "left",
+                    "titlePadding": 5,
+                    "title": "Latitude"
+                }
+            ],
+
+            "marks": [
+                {
+                    "name": "marks",
+                    "type": "symbol",
+                    "from": {"data": "source"},
+                    "encode": {
+                        "update": {
+                            "x": {"scale": "x", "field": "longitude"},
+                            "y": {"scale": "y", "field": "latitude"},
+                            "size": {"value": 4},
+                            "fill": {"value": "#ccc"}
+                        }
+                    }
+                },
+                {
+                    "type": "path",
+                    "clip": true,
+                    "from": {"data": "contours"},
+                    "encode": {
+                        "enter": {
+                            "strokeWidth": {"value": 1},
+                            "strokeOpacity": {"value": 1},
+                            "stroke": {"value": "orange"}
+                        }
+                    },
+                    "transform": [
+                        {"type": "geopath", "field": "datum.contour"}
+                    ]
+                }
+            ]
         };
 
-        // Embed the visualization into the "vis" div
-        vegaEmbed('#vis', spec).then(result => {
-            console.log("Visualization rendered");
+        // Embed the contour plot
+        vegaEmbed('#contour-plot', contourPlotSpec).then(result => {
+            console.log("Contour plot rendered");
         }).catch(console.warn);
     </script>
 
